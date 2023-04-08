@@ -1,23 +1,78 @@
-const { users } = require("../mocks/users");
+let { users } = require("../mocks/users");
 
 module.exports = {
   listUsers(request, response) {
-    // Extrai o parâmetro de consulta "order" da solicitação
     const { order } = request.query;
 
-    // Classifica o array de usuários com base no parâmetro "order"
     const sortedUsers = users.sort((a, b) => {
       if (order === "desc") {
-        // Se o parâmetro "order" for "desc", classifica em ordem decrescente
         return a.id < b.id ? 1 : -1;
       }
 
-      // Caso contrário, classifica em ordem crescente (padrão)
       return a.id > b.id ? 1 : -1;
     });
 
-    // Envia uma resposta com código 200 e o conteúdo do array de usuários classificado em formato JSON
-    response.writeHead(200, { "Content-type": "application/json" });
-    response.end(JSON.stringify(users));
+    response.send(200, sortedUsers);
+  },
+
+  getUserById(request, response) {
+    const { id } = request.params;
+
+    const user = users.find((user) => user.id === Number(id));
+
+    if (user) {
+      return response.send(200, user);
+    }
+
+    response.send(400, { error: "User not found" });
+  },
+
+  createUser(request, response) {
+    const { body } = request;
+
+    const lastUserId = users[users.length - 1].id;
+    const newUser = {
+      id: lastUserId + 1,
+      name: body.name,
+    };
+    users.push(newUser);
+
+    response.send(200, newUser);
+  },
+
+  updateUser(request, response) {
+    let { id } = request.params;
+    const { name } = request.body;
+
+    id = Number(id);
+
+    const userExists = users.find((user) => user.id === id);
+
+    if (!userExists) {
+      response.send(400, { error: "User not found" });
+    }
+
+    users = users.map((user) => {
+      if (user.id === id) {
+        return {
+          ...user,
+          name,
+        };
+      }
+
+      return user;
+    });
+
+    response.send(200, { id, name });
+  },
+
+  deleteUser(request, response) {
+    let { id } = request.params;
+
+    id = Number(id);
+
+    users = users.filter((user) => user.id !== id);
+
+    response.send(200, { deleted: true });
   },
 };
